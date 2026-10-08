@@ -4,14 +4,13 @@
     <item name="colorPrimary">@color/brand</item>
     <item name="colorAccent">@color/brand</item>
     <item name="android:windowBackground">@color/surface</item>
-    <!-- 状态栏跟随页面底色，图标用深色，避免加载时出现一条突兀的色带 -->
+    <!-- 暗色下状态栏图标要转成浅色，否则看不见 -->
     <item name="android:statusBarColor">@color/surface</item>
-    <item name="android:windowLightStatusBar">true</item>
+    <item name="android:windowLightStatusBar">false</item>
     <item name="android:navigationBarColor">@color/surface</item>
-    <item name="android:windowLightNavigationBar">true</item>
+    <item name="android:windowLightNavigationBar">false</item>
   </style>
 
-  <!-- 冷启动第一帧就用渐变铺满，衔接 Acitivity 内部的启动层 -->
   <style name="SplashTheme" parent="AppTheme">
     <item name="android:windowBackground">@drawable/splash_gradient</item>
   </style>

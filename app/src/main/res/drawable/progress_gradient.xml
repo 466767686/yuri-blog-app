@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 顶部加载条：品牌色渐变，从左向右由浅到深 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+  <item android:id="@android:id/background">
+    <shape android:shape="rectangle">
+      <solid android:color="@android:color/transparent" />
+    </shape>
+  </item>
+  <item android:id="@android:id/progress">
+    <clip>
+      <shape android:shape="rectangle">
+        <gradient
+          android:angle="0"
+          android:startColor="@color/brand_soft"
+          android:endColor="@color/brand" />
+      </shape>
+    </clip>
+  </item>
+</layer-list>

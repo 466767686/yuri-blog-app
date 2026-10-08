@@ -2,12 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-permission android:name="android.permission.INTERNET" />
   <application
-    android:label="YuriのBlog"
+    android:label="@string/app_name"
     android:icon="@mipmap/ic_launcher"
-    android:theme="@style/AppTheme">
+    android:theme="@style/AppTheme"
+    android:hardwareAccelerated="true">
     <activity
       android:name=".MainActivity"
       android:exported="true"
+      android:theme="@style/SplashTheme"
+      android:windowSoftInputMode="adjustResize"
       android:configChanges="orientation|screenSize|keyboardHidden|screenLayout">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- 暗色下用略偏紫的深底，避免纯黑与网站的暖色调割裂 -->
+  <color name="surface">#1a1116</color>
+  <color name="surface_tint">#241820</color>
+</resources>

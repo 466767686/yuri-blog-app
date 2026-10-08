@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <color name="brand">#e9536a</color>
+  <color name="brand_soft">#f9a8b8</color>
+  <color name="brand_deep">#c73e54</color>
+
+  <!-- 页面底色：加载期间露出的颜色，与网站亮色主题一致 -->
+  <color name="surface">#fdf2f4</color>
+  <color name="surface_tint">#fce8ec</color>
+
+  <!-- 运行时切换用：状态栏要跟着网页的主题走，而网页主题由用户手动切换，
+       未必跟系统一致，所以不能只靠 values-night 自动适配。 -->
+  <color name="surface_light">#fdf2f4</color>
+  <color name="surface_dark">#1a1116</color>
+</resources>
