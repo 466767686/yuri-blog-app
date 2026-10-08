@@ -40,6 +40,9 @@ public class MainActivity extends AppCompatActivity {
   private View splash;
   private boolean revealed = false;
 
+  /** 网页是否已滚离顶部。由注入的 JS 维护，供下拉刷新做 O(1) 判断。 */
+  private volatile boolean scrolledDown = false;
+
   @SuppressLint("SetJavaScriptEnabled")
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -120,6 +123,24 @@ public class MainActivity extends AppCompatActivity {
    * 监听 class 变化即可，用户点主题按钮时状态栏会一起跟着变。
    * 用标志位防止在 ClientRouter 反复回调时重复安装观察器。
    */
+  /**
+   * 把「是否已滚离顶部」同步给原生。只在跨越阈值的那一刻通知一次，
+   * 而不是每帧跨桥调用，所以对滚动本身几乎没有负担。
+   */
+  private static final String SCROLL_BRIDGE_JS =
+    "(function(){try{"
+    + "if(window.__yuriScrollBridge)return;window.__yuriScrollBridge=1;"
+    + "var last=null;"
+    + "var push=function(){try{"
+    + "var y=window.scrollY||document.documentElement.scrollTop||0;"
+    + "var now=y>4;"
+    + "if(now!==last){last=now;YuriNative.setScrolled(now);}"
+    + "}catch(e){}};"
+    + "window.addEventListener('scroll',push,{passive:true});"
+    + "document.addEventListener('astro:after-swap',push);"
+    + "push();"
+    + "}catch(e){}})();";
+
   private static final String THEME_BRIDGE_JS =
     "(function(){try{"
     + "if(window.__yuriThemeBridge)return;window.__yuriThemeBridge=1;"
@@ -146,6 +167,9 @@ public class MainActivity extends AppCompatActivity {
     webView.setVerticalScrollBarEnabled(false);
     webView.setHorizontalScrollBarEnabled(false);
     webView.setBackgroundColor(ContextCompat.getColor(this, R.color.surface));
+    // 关掉嵌套滚动：让 WebView 自己处理滚动与 fling，
+    // 不必每帧再走一遍 parent 的回调链
+    webView.setNestedScrollingEnabled(false);
 
     webView.addJavascriptInterface(new ThemeBridge(), "YuriNative");
 
@@ -164,6 +188,7 @@ public class MainActivity extends AppCompatActivity {
       public void onPageFinished(WebView view, String url) {
         swipe.setRefreshing(false);
         view.evaluateJavascript(THEME_BRIDGE_JS, null);
+        view.evaluateJavascript(SCROLL_BRIDGE_JS, null);
         revealContent();
       }
     });
@@ -203,6 +228,10 @@ public class MainActivity extends AppCompatActivity {
     swipe.setColorSchemeResources(R.color.brand, R.color.brand_soft);
     swipe.setProgressBackgroundColorSchemeResource(R.color.surface);
     swipe.setProgressViewOffset(false, 0, (int) (getResources().getDisplayMetrics().density * 24));
+    // 「能否下拉」改读本地标志。默认实现会对 WebView 调一次 canScrollVertically()，
+    // 那是同步查询，而 onInterceptTouchEvent 每个触摸事件都会走一遍，
+    // 滚动时相当于逐帧问一次「网页滚到底没」，开销很大。
+    swipe.setOnChildScrollUpCallback((parent, child) -> scrolledDown);
     swipe.setOnRefreshListener(() -> webView.reload());
   }
 
@@ -221,8 +250,13 @@ public class MainActivity extends AppCompatActivity {
     });
   }
 
-  /** 网页 → 原生的主题同步通道。只暴露这一个方法。 */
+  /** 网页 → 原生的通道：主题同步 + 滚动状态回报，只暴露这两个方法。 */
   private class ThemeBridge {
+    @JavascriptInterface
+    public void setScrolled(boolean scrolled) {
+      scrolledDown = scrolled;
+    }
+
     @JavascriptInterface
     public void syncDark(boolean dark) {
       runOnUiThread(() -> applySystemBars(dark));
@@ -236,7 +270,17 @@ public class MainActivity extends AppCompatActivity {
     }
     revealed = true;
     DecelerateInterpolator ease = new DecelerateInterpolator();
-    webView.animate().alpha(1f).setDuration(REVEAL_MS).setInterpolator(ease).start();
+    webView.animate()
+      .alpha(1f)
+      .setDuration(REVEAL_MS)
+      .setInterpolator(ease)
+      .withEndAction(() -> {
+        // 收干净渲染状态：alpha 归位、不残留 View 层，
+        // 让 WebView 回到开销最小的那条合成路径。
+        webView.setAlpha(1f);
+        webView.setLayerType(View.LAYER_TYPE_NONE, null);
+      })
+      .start();
     splash.animate()
       .alpha(0f)
       .setDuration(REVEAL_MS)
